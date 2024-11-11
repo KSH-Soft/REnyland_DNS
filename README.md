@@ -2,7 +2,7 @@
 <h1 align="center" style="font-weight: bold;">RENYLAND DNS 💻</h1>
 
 <p align="center">
-<a href="#tech">Technologies</a>
+<a href="#technologies">Technologies</a>
 <a href="#started">Mise en route</a>
 
  
@@ -15,7 +15,7 @@ Il propose également un Message Of The Day, ainsi qu'une vérification de la co
 
 
 <p align="center">
-<a href="http://www.kashi.world.free.fr/REnyland/index.html">💻 Visiter le projet</a>
+<a href="http://kashi.world.free.fr/REnyland/index.html">💻 Visiter le projet</a>
 </p>
 
 <h2 id="layout">🎨 Mise en page</h2>
