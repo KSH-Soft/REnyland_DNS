@@ -1,0 +1,1 @@
+pyinstaller --add-data "ressources.qrc:." --onefile --icon .\logo.ico -n Renyland_DNS --version-file .\file_version_info.txt .\main.py

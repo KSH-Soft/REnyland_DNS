@@ -1,0 +1,12 @@
+<RCC>
+  <qresource prefix="Asset">
+    <file>wtfpl.png</file>
+    <file>logo.ico</file>
+    <file>param.png</file>
+    <file>croixx.png</file>
+    <file>bg.png</file>
+    <file>led-o.png</file>
+    <file>led-r.png</file>
+    <file>led-v.png</file>
+  </qresource>
+</RCC>
