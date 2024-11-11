@@ -1,2 +1,6 @@
 #fleme de versionner
 *.*
+.ServerAssets/
+.ServerAssets/*.*
+.Assets/
+.Assets/*.*
