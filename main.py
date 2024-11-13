@@ -28,18 +28,56 @@ TARGET_ADDRESSES = [
 SECTION_START = "####ANYLAND-DNS####"
 SECTION_END = "#### BY AXSYS #####"
 
+class InternetTestThread(QThread):
+    update_status_signal = pyqtSignal(str)
+    update_led_signal = pyqtSignal(str)
 
-#SubProcess experimental
-class Worker(QThread):
-    update_signal = pyqtSignal(str)
-
-    def __init__(self, ui):
+    def __init__(self, ui_instance):
         super().__init__()
-        self.ui = ui
+        self.ui_instance = ui_instance
 
     def run(self):
-        self.ui.check_exec_key_ini()
-        self.ui.internet_test()
+
+        status_message = "Status : Check en cours..."
+        self.update_status_signal.emit(status_message)
+
+        game_ip = self.ui_instance.read_value_from_ini('Config', 'ip')
+        if game_ip != "0.0.0.0":
+            if self.ui_instance.internet_connection():
+                self.update_led_signal.emit("orange")
+                self.update_status_signal.emit("Status : Connexion internet réussie... Check du serveur...")
+
+                url = "http://kashi.world.free.fr/REnyland/HOTD"
+                try:
+                    response = requests.get(url)
+                    if response.status_code == 200:
+                        HOTD = response.text
+                        self.ui_instance.HOTD.setText(HOTD)
+                except requests.RequestException:
+                    self.update_status_signal.emit("Status : Erreur de connexion au serveur HOTD")
+
+                url = "http://kashi.world.free.fr/REnyland/LASTV"
+                try:
+                    response = requests.get(url)
+                    if response.status_code == 200:
+                        LASTV = response.text
+                        if LASTV > version:
+                            self.update_status_signal.emit("/!\\ NEED UPDATE /!\\")
+                except requests.RequestException:
+                    self.update_status_signal.emit("Status : Erreur de connexion pour vérifier la version")
+
+                if self.ui_instance.is_port_open(game_ip, port):
+                    self.update_led_signal.emit("vert")
+                    self.update_status_signal.emit("Status : La redirection DNS est activée")
+                else:
+                    self.update_led_signal.emit("orange")
+                    self.update_status_signal.emit("Status : Problème avec le serveur ou mauvaise IP...")
+            else:
+                self.update_led_signal.emit("rouge")
+                self.update_status_signal.emit("Status : Pas de connexion Internet")
+        else:
+            self.update_led_signal.emit("rouge")
+            self.update_status_signal.emit("Status : Adresse IP non configurée.")
 
 class Ui_MainWindow(object):
     global game_ip
@@ -50,6 +88,8 @@ class Ui_MainWindow(object):
         MainWindow.setEnabled(True)
         MainWindow.resize(400, 200)
         MainWindow.setFixedSize(400, 200)
+        
+        self.internet_thread = None
         
         MainWindow.setWindowFlags(Qt.FramelessWindowHint)
         
@@ -160,7 +200,7 @@ class Ui_MainWindow(object):
             self.save_to_ini(KSHRPFile, 'Config', 'ip', '0.0.0.0')
             self.check_comment()
         game_ip = self.read_value_from_ini('Config', 'ip')
-            
+
     def param_click(self, event):
         self.param()
         
@@ -176,7 +216,6 @@ class Ui_MainWindow(object):
     
         layout = QVBoxLayout(dialog)
     
-        # Adresse IP
         self.label_ip = QLabel("Adresse IP du serveur:", dialog)
         self.label_ip.setFont(QtGui.QFont('Arial', 8))        
         self.ip_input = QtWidgets.QLineEdit(dialog)
@@ -188,13 +227,11 @@ class Ui_MainWindow(object):
         layout.addWidget(self.label_ip)
         layout.addWidget(self.ip_input)
     
-        # Bouton Sauvegarder
         self.save_button = QtWidgets.QPushButton("Sauvegarder IP", dialog)
         self.save_button.setFont(QtGui.QFont('Arial', 8))
         self.save_button.clicked.connect(self.save_ip)
         layout.addWidget(self.save_button)
     
-        # Layout pour les autres boutons
         button_layout = QHBoxLayout()
         self.disable_button = QtWidgets.QPushButton('Désactiver', dialog)
         self.disable_button.setFont(QtGui.QFont('Arial', 8))
@@ -207,8 +244,7 @@ class Ui_MainWindow(object):
         button_layout.addWidget(self.exe_button)
     
         layout.addLayout(button_layout)
-    
-        # Créer un layout horizontal pour le texte et l'icône
+        
         text_icon_layout = QHBoxLayout()
         
         # Texte centré
@@ -267,7 +303,7 @@ class Ui_MainWindow(object):
         except Exception as e:
             pass    
         self.STATUS.setText("Status : Check en cours...")
-        ui.start_background_task()
+        self.internet_test()
     
     def check_exec_key_ini(self):
         config = configparser.ConfigParser()
@@ -278,8 +314,8 @@ class Ui_MainWindow(object):
             self.pushButton.setText("CONFIG")
             
     def is_port_open(self, game_ip, port, timeout=5):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Créer un socket TCP/IP
-        sock.settimeout(timeout)  # Définir un délai d'attente (timeout)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
         try:
             sock.connect((game_ip, port))
         except (socket.timeout, socket.error) as e:
@@ -287,45 +323,6 @@ class Ui_MainWindow(object):
         finally:
             sock.close()
         return True
-            
-    def internet_test(self):
-        self.STATUS.setText("Status : Check en cours...")
-        game_ip = self.read_value_from_ini('Config', 'ip')
-        if game_ip != "0.0.0.0":
-            if self.internet_connection():
-                self.IMG_LED.setStyleSheet("image: url(:/Asset/led-o.png);")
-                self.STATUS.setText("Status : Connexion internet réussie... Check du serveur...")
-
-                url = "http://kashi.world.free.fr/Renyland/HOTD"
-                response = requests.get(url)
-                if response.status_code == 200:
-                    HOTD = response.text
-                    self.HOTD.setText(HOTD)
-
-                url = "http://kashi.world.free.fr/Renyland/LASTV"
-                response = requests.get(url)
-                if response.status_code == 200:
-                    LASTV = response.text
-                    if LASTV > version:
-                        self.VersionUI.setText("/!\\ NEED UPDATE /!\\")
-
-                if self.is_port_open(game_ip, port):
-                    self.IMG_LED.setStyleSheet("image: url(:/Asset/led-v.png);")
-                    self.STATUS.setText("Status : La redirection DNS est activée")
-                else:
-                    self.IMG_LED.setStyleSheet("image: url(:/Asset/led-o.png);")
-                    self.STATUS.setText("Status : Problème avec le serveur ou mauvaise IP...")
-            else:
-                self.IMG_LED.setStyleSheet("image: url(:/Asset/led-r.png);")
-                self.STATUS.setText("Status : Pas de connexion Internet")
-        else:
-            self.IMG_LED.setStyleSheet("image: url(:/Asset/led-r.png);")
-            self.STATUS.setText("Status : Adresse IP non configuré.")
-            
-            
-    def internettest(self, event):
-        self.STATUS.setText("Status : Check en cours...")
-        ui.start_background_task()
 
     def internet_connection(self):
         try:
@@ -449,13 +446,26 @@ class Ui_MainWindow(object):
         self.STATUS.setText("Status : ")
         self.HOTD.setText("Annonce :")
 
-    def start_background_task(self):
-        self.worker = Worker(self)  # Crée un worker (thread)
-        self.worker.start()  # Lance le thread
-        self.worker.update_signal.connect(self.handle_update)  # Connecte le signal pour afficher un message
-
     def handle_update(self, message):
-        self.STATUS.setText(message)  # Mise à jour du statut dans l'interface
+        self.STATUS.setText(message)
+        
+    def launch_internet_test_thread(self):
+        self.STATUS.setText("Status : Check en cours...")
+        self.internet_thread = InternetTestThread(self)
+        self.internet_thread.update_status_signal.connect(self.handle_update)
+        self.internet_thread.update_led_signal.connect(self.update_led)
+        self.internet_thread.start()
+        
+    def update_led(self, color):
+        if color == "vert":
+            self.IMG_LED.setStyleSheet("image: url(:/Asset/led-v.png);")
+        elif color == "orange":
+            self.IMG_LED.setStyleSheet("image: url(:/Asset/led-o.png);")
+        elif color == "rouge":
+            self.IMG_LED.setStyleSheet("image: url(:/Asset/led-r.png);")
+
+    def internettest(self, event):
+        self.launch_internet_test_thread()
 
 import ressources
 
@@ -468,5 +478,6 @@ if __name__ == "__main__":
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()
-    ui.start_background_task()
+    ui.launch_internet_test_thread()
+    ui.check_exec_key_ini()
     sys.exit(app.exec_())
