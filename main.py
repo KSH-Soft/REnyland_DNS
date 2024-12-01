@@ -8,7 +8,7 @@ import configparser
 
 global init
 global game_ip
-version = '1'
+version = '2'
 appdata_path = os.getenv('APPDATA')
 KSHDIR = os.path.join(appdata_path, 'KSH-Soft')
 KSHRPDIR = os.path.join(appdata_path, 'KSH-Soft', 'RenylandProxy')
@@ -95,7 +95,7 @@ class Ui_MainWindow(object):
         
         app_icon = QtGui.QIcon()
         app_icon.addFile(':/Asset/logo.ico', QSize(48, 48))
-        app.setWindowIcon(app_icon)
+        MainWindow.setWindowIcon(app_icon)
         
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -303,7 +303,8 @@ class Ui_MainWindow(object):
         except Exception as e:
             pass    
         self.STATUS.setText("Status : Check en cours...")
-        self.internet_test()
+        self.launch_internet_test_thread()
+        # self.internet_test()
     
     def check_exec_key_ini(self):
         config = configparser.ConfigParser()
