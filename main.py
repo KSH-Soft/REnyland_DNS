@@ -147,8 +147,14 @@ class Ui_MainWindow(object):
         
         self.VersionUI = QLabel(self.centralwidget)
         self.VersionUI.setObjectName(u"Version")
-        self.VersionUI.setGeometry(QRect(25, 4, 281, 16))
-        self.VersionUI.setText("")
+        self.VersionUI.setGeometry(QRect(370, 150, 61, 21))
+        self.VersionUI.setText("V." + version)
+        VersionUI_sheet = """
+        QLabel{
+        color: #357ABD;
+        }
+    """
+        self.VersionUI.setStyleSheet(VersionUI_sheet)
         self.VersionUI.setFont(QtGui.QFont('Arial', 8))
 
         self.HOTD = QtWidgets.QLabel(self.centralwidget)
@@ -229,7 +235,8 @@ class Ui_MainWindow(object):
     
         self.save_button = QtWidgets.QPushButton("Sauvegarder IP", dialog)
         self.save_button.setFont(QtGui.QFont('Arial', 8))
-        self.save_button.clicked.connect(self.save_ip)
+        # self.save_button.clicked.connect(self.save_ip)
+        self.save_button.clicked.connect((lambda: self.save_ip(dialog)))
         layout.addWidget(self.save_button)
     
         button_layout = QHBoxLayout()
@@ -266,10 +273,11 @@ class Ui_MainWindow(object):
         dialog.setLayout(layout)
         dialog.exec_()
     
-    def save_ip(self):
+    def save_ip(self, dialog):
         ip = self.ip_input.text()
         if ip:
             self.save_to_ini(KSHRPFile, 'Config', 'ip', ip)
+        dialog.accept()
     
     def on_disable_button_click(self):
         self.check_comment()
